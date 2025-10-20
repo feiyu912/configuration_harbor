@@ -1,6 +1,6 @@
 # YOLO dataset configuration for port operations
 # Update the absolute/relative paths as needed
-path: F:/python/configuration/dataset_yolo
+path: G:/python/configuration_harbor/dataset_yolo
 train: images/train
 val: images/val
 test: images/test

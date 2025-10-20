@@ -1,0 +1,14 @@
+<annotation>
+	<folder>gator</folder>
+	<filename>00001.jpg</filename>
+	<path>G:\python\configuration_harbor\datasets\public_container\gator\00001.jpg</path>
+	<source>
+		<database>Unknown</database>
+	</source>
+	<size>
+		<width>600</width>
+		<height>800</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+</annotation>

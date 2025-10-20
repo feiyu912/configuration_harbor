@@ -1,0 +1,11 @@
+# YOLO dataset configuration for public port dataset
+# Using existing dataset directory
+path: G:/python/configuration_harbor/dataset_yolo
+train: images/train
+val: images/val
+test: images/test
+
+names:
+  0: ship
+  1: container
+  2: crane

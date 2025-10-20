@@ -4,6 +4,10 @@ from ultralytics import YOLO
 
 
 def train_one(data_yaml: str, model_name: str, imgsz: int, epochs: int, name: str):
+    import os
+    # 设置离线模式，避免网络检查
+    os.environ['ULTRALYTICS_OFFLINE'] = '1'
+    
     model = YOLO(model_name)
     results = model.train(
         data=data_yaml,

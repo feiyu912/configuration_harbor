@@ -1,0 +1,11 @@
+# YOLO dataset configuration for mixed port dataset
+# Update the absolute/relative paths as needed
+path: G:/python/configuration_harbor/dataset_yolo
+train: images/train
+val: images/val
+test: images/test
+
+names:
+  0: ship
+  1: container
+  2: crane
