@@ -8,14 +8,18 @@ def train_one(data_yaml: str, model_name: str, imgsz: int, epochs: int, name: st
     # 设置离线模式，避免网络检查
     os.environ['ULTRALYTICS_OFFLINE'] = '1'
     
+    # 确保每次训练都使用唯一的目录名，避免覆盖
+    import time
+    unique_name = f"{name}_{int(time.time())}"
+    
     model = YOLO(model_name)
     results = model.train(
         data=data_yaml,
         imgsz=imgsz,
         epochs=epochs,
-        name=name,
+        name=unique_name,
         project="runs/detect",
-        exist_ok=True,
+        exist_ok=False,  # 设置为False，确保创建新目录而不是覆盖
         verbose=True,
     )
     return Path(results.save_dir)
@@ -42,7 +46,8 @@ def main():
     evaluate(best, args.data)
 
     if args.compare_data:
-        comp_name = f"{args.name}_public"
+        # 使用更明确的比较目录名称
+        comp_name = f"{args.name}_vs_compare"
         comp_dir = train_one(args.compare_data, args.model, args.imgsz, args.epochs, comp_name)
         comp_best = comp_dir / "weights" / "best.pt"
         print(f"Comparison training completed: {comp_dir}")

@@ -1,6 +1,5 @@
 # YOLO dataset configuration for public port dataset
-# Using existing dataset directory
-path: G:/python/configuration_harbor/dataset_yolo
+path: f:/python/configuration_harbor/dataset_yolo_public
 train: images/train
 val: images/val
 test: images/test
