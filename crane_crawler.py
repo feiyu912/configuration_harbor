@@ -12,7 +12,7 @@ import concurrent.futures
 from tqdm import tqdm
 
 class CraneCrawler:
-    def __init__(self, save_dir="datasets/private_ship"):
+    def __init__(self, save_dir="datasets/private_harbor"):
         self.save_dir = Path(save_dir)
         self.images_dir = self.save_dir / "JPEGImages"
         self.annotations_dir = self.save_dir / "Annotations"
@@ -128,7 +128,7 @@ class CraneCrawler:
                         for i, pic_url in enumerate(pic_urls[:10]):  # 每页最多10张
                             if downloaded >= max_images:
                                 break
-                            filename = f"船_{downloaded:06d}.jpg"
+                            filename = f"harbor_{downloaded:06d}.jpg"
                             future = executor.submit(self.download_image, pic_url, filename)
                             futures.append(future)
                             downloaded += 1
@@ -156,8 +156,7 @@ class CraneCrawler:
 def main():
     # 自制吊机关键词（与公开的不同类型）
     keywords = [
-        "港口船",
-
+        "港口",
     ]
 
     crawler = CraneCrawler()

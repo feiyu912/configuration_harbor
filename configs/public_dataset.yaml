@@ -7,4 +7,3 @@ test: images/test
 names:
   0: ship
   1: container
-  2: crane

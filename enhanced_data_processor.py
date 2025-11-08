@@ -230,42 +230,72 @@ def validate_and_fix_labels(labels, img_shape):
     return valid_labels
 
 def process_image(image_path, label_path, out_image_path, out_label_path, 
-                 normalize=False, denoise=None, fix_labels=True, class_id=None):
-    """处理单个图像和标签文件"""
+                 normalize=False, denoise=None, fix_labels=True, class_id=None, dataset_type=None):
+    """处理单个图像和标签文件，根据数据集类型采用不同策略"""
     # 读取图像
     image = cv2.imread(str(image_path))
     if image is None:
-        print(f"警告: 无法读取图像 {image_path}")
+        print(f"警告: 无法读取图像 {image_path}，已跳过")
+        return False
+    
+    # 检查图像是否损坏
+    if image.size == 0 or len(image.shape) < 2:
+        print(f"警告: 图像 {image_path} 损坏，已跳过")
         return False
     
     # 读取标签
     labels = read_yolo_labels(label_path)
     
-    # 处理缺失标签
-    if not labels and class_id is not None:
-        handle_missing_labels(image_path, label_path, class_id)
-        labels = read_yolo_labels(label_path)
+    # 根据数据集类型处理缺失标签
+    if not labels:
+        if dataset_type == "private":
+            # 自制数据集：如果标签缺失但有class_id，创建默认标签
+            if class_id is not None:
+                print(f"注意: 为自制数据集图像 {image_path} 创建默认标签")
+                handle_missing_labels(image_path, label_path, class_id)
+                labels = read_yolo_labels(label_path)
+            else:
+                print(f"警告: 自制数据集图像 {image_path} 缺少标签且无法确定类别，已跳过")
+                return False
+        elif dataset_type == "public":
+            # 公开数据集：标签缺失直接跳过
+            print(f"警告: 公开数据集图像 {image_path} 缺少标签，已跳过")
+            return False
     
     # 图像预处理
     if normalize:
         image = normalize_image(image)
     
     if denoise:
-        image = denoise_image(image, denoise)
+        # 对于自制数据集，使用更强的去噪
+        if dataset_type == "private" and denoise == "gaussian":
+            # 自制数据集使用稍大的高斯核
+            image = cv2.GaussianBlur(image, (7, 7), 1)
+        else:
+            image = denoise_image(image, denoise)
     
     # 验证和修复标签
     if fix_labels:
         labels = validate_and_fix_labels(labels, image.shape)
+        # 如果修复后没有有效标签，跳过此图像
+        if not labels:
+            print(f"警告: 图像 {image_path} 的标签修复后为空，已跳过")
+            return False
     
     # 保存处理后的图像和标签
-    cv2.imwrite(str(out_image_path), image)
-    write_yolo_labels(out_label_path, labels)
-    
-    return True
+    try:
+        # 创建输出目录（如果不存在）
+        out_image_path.parent.mkdir(parents=True, exist_ok=True)
+        cv2.imwrite(str(out_image_path), image)
+        write_yolo_labels(out_label_path, labels)
+        return True
+    except Exception as e:
+        print(f"保存文件时出错 {out_image_path}: {e}")
+        return False
 
 def split_and_process_dataset(raw_dir: Path, out_dir: Path, val_ratio: float, test_ratio: float,
-                             normalize=False, denoise=None, fix_labels=True, class_map=None):
-    """分割数据集并处理图像"""
+                             normalize=False, denoise=None, fix_labels=True, class_map=None, dataset_type=None):
+    """分割数据集并处理图像，根据数据集类型采用不同策略"""
     img_dir = raw_dir / "images"
     lbl_dir = raw_dir / "labels"
     
@@ -283,8 +313,12 @@ def split_and_process_dataset(raw_dir: Path, out_dir: Path, val_ratio: float, te
         "test": images[n - n_test :],
     }
     
+    # 统计信息
     total_processed = 0
+    total_skipped = 0
+    
     for split_name, split_images in splits.items():
+        print(f"开始处理 {split_name} 集，共 {len(split_images)} 个文件")
         for img_path in tqdm(split_images, desc=f"处理 {split_name} 集"):
             rel = img_path.relative_to(img_dir)
             dst_img = out_dir / "images" / split_name / rel
@@ -303,10 +337,14 @@ def split_and_process_dataset(raw_dir: Path, out_dir: Path, val_ratio: float, te
                         break
             
             # 处理图像和标签
-            if process_image(img_path, src_lbl, dst_img, dst_lbl, normalize, denoise, fix_labels, class_id):
+            if process_image(img_path, src_lbl, dst_img, dst_lbl, 
+                           normalize, denoise, fix_labels, class_id, dataset_type):
                 total_processed += 1
+            else:
+                total_skipped += 1
     
-    print(f"数据处理完成，成功处理 {total_processed} 个文件")
+    print(f"数据处理完成，成功处理 {total_processed} 个文件，跳过 {total_skipped} 个文件")
+    print(f"处理策略: 数据集类型={dataset_type}, 归一化={normalize}, 去噪={denoise}, 修复标签={fix_labels}")
 
 def enhanced_augmentation(out_dir: Path, aug_per_image: int):
     """增强的数据增强功能"""
@@ -478,11 +516,14 @@ def main():
     merge_parser.add_argument("--all", action="store_true", help="合并所有数据集")
     merge_parser.add_argument("--normalize", action="store_true", help="对图像进行归一化")
     merge_parser.add_argument("--denoise", choices=["gaussian", "median", "bilateral"], help="图像去噪方法")
+    merge_parser.add_argument("--force-strategy", action="store_true", help="强制使用默认预处理策略")
     
     # 处理和分割数据集命令
     process_parser = subparsers.add_parser("process", help="处理和分割数据集")
     process_parser.add_argument("--raw-dir", type=Path, required=True, help="原始数据集目录")
     process_parser.add_argument("--out-dir", type=Path, required=True, help="输出目录")
+    process_parser.add_argument("--dataset-type", choices=["public", "private"], 
+                             help="数据集类型: public(公开), private(自制)")
     process_parser.add_argument("--val-ratio", type=float, default=0.15, help="验证集比例")
     process_parser.add_argument("--test-ratio", type=float, default=0.15, help="测试集比例")
     process_parser.add_argument("--normalize", action="store_true", help="对图像进行归一化")
@@ -506,10 +547,12 @@ def main():
             print("开始合并公开数据集...")
             public_patterns = [
                 ("raw_public_ship/images", 0),     # ship
-                ("raw_public_container/images", 1),  # container
-                ("raw_public_crane/images", 2)      # crane
+                ("raw_public_container/images", 1)  # container
             ]
-            merge_categorized_datasets(public_patterns, Path("raw_public"), args.normalize, args.denoise)
+            # 公开数据集预处理策略：归一化必须，去噪通常跳过
+            use_normalize = True if args.force_strategy or not hasattr(args, 'normalize') else args.normalize
+            use_denoise = args.denoise  # 保持用户传入的去噪参数
+            merge_categorized_datasets(public_patterns, Path("raw_public"), use_normalize, use_denoise)
         
         if args.all or args.private:
             print("开始合并自制数据集...")
@@ -518,7 +561,10 @@ def main():
                 ("raw_private_container/images", 1),  # container
                 ("raw_private_crane/images", 2)      # crane
             ]
-            merge_categorized_datasets(private_patterns, Path("raw_private"), args.normalize, args.denoise)
+            # 自制数据集预处理策略：归一化必须，去噪建议使用gaussian（如果用户没有指定）
+            use_normalize = True if args.force_strategy or not hasattr(args, 'normalize') else args.normalize
+            use_denoise = "gaussian" if args.force_strategy and args.denoise is None else args.denoise
+            merge_categorized_datasets(private_patterns, Path("raw_private"), use_normalize, use_denoise)
         
         if not any([args.all, args.public, args.private]):
             print("请选择要合并的数据集类型。使用 --help 查看可用选项。")
@@ -530,13 +576,48 @@ def main():
         # 确保输出目录存在
         args.out_dir.mkdir(parents=True, exist_ok=True)
         
+        # 根据数据集类型自动设置预处理策略
+        use_normalize = args.normalize
+        use_denoise = args.denoise
+        use_fix_labels = args.fix_labels
+        use_augment = args.augment
+        aug_per_image = args.aug_per_image
+        
+        # 如果指定了数据集类型，应用相应的预处理策略
+        if args.dataset_type:
+            print(f"应用 {args.dataset_type} 数据集的默认预处理策略")
+            
+            if args.dataset_type == "public":
+                # 公开数据集策略：归一化必须，去噪通常跳过，缺失值检查并删除损坏文件，数据增强必须
+                use_normalize = True
+                # 去噪保持用户指定，否则跳过
+                use_fix_labels = True  # 强制检查并修复标签
+                use_augment = True if use_augment is None else use_augment  # 默认为必须
+                if use_augment and aug_per_image < 1:
+                    aug_per_image = 2  # 至少增强2倍
+            
+            elif args.dataset_type == "private":
+                # 自制数据集策略：归一化必须，去噪强烈建议，缺失值必须清洗，数据增强必须
+                use_normalize = True
+                use_denoise = "gaussian" if use_denoise is None else use_denoise  # 默认为gaussian去噪
+                use_fix_labels = True  # 强制检查并修复标签
+                use_augment = True  # 默认为必须
+                if use_augment and aug_per_image < 1:
+                    aug_per_image = 3  # 自制数据通常更稀缺，增强3倍
+            
+            
+        
+        # 显示实际使用的预处理参数
+        print(f"预处理参数: 归一化={use_normalize}, 去噪={use_denoise}, 修复标签={use_fix_labels}")
+        print(f"数据增强: {use_augment}, 每个图像增强数量={aug_per_image}")
+        
         # 分割和处理数据集
         split_and_process_dataset(args.raw_dir, args.out_dir, args.val_ratio, args.test_ratio,
-                                 args.normalize, args.denoise, args.fix_labels, class_map)
+                                 use_normalize, use_denoise, use_fix_labels, class_map, args.dataset_type)
         
         # 数据增强
-        if args.augment and args.aug_per_image > 0:
-            enhanced_augmentation(args.out_dir, args.aug_per_image)
+        if use_augment and aug_per_image > 0:
+            enhanced_augmentation(args.out_dir, aug_per_image)
     
     else:
         parser.print_help()
