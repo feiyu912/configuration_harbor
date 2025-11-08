@@ -1,0 +1,28 @@
+# 图片和数据文件
+raw_*/images/
+dataset_yolo*/images/
+*.jpg
+*.png
+*.jpeg
+*.JPG
+*.PNG
+
+# 模型权重文件
+*.pt
+*.pth
+*.onnx
+
+# 训练结果（可选）
+runs/
+*.cache
+
+# 保持示例数据
+!sample_data/
+!sample_data/images/
+!sample_data/labels/
+
+# IDE文件
+.idea/
+.vscode/
+*.pyc
+__pycache__/

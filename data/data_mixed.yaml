@@ -1,0 +1,14 @@
+# 混合数据集配置（公开+私有）
+path: ../dataset_yolo_mixed
+train: images/train
+val: images/val
+
+# 类别定义
+nc: 3  # 类别数量
+names: ['ship', 'container', 'crane']  # 类别名称
+
+# 可选配置
+# download:  # 下载命令或脚本
+
+# 验证设置
+# val: images/val  # 验证集路径

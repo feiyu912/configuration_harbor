@@ -1,0 +1,11 @@
+# 混合测试数据集配置（用于模型对比评估）
+path: ../dataset_yolo_mixed_test
+train: images/test
+val: images/test
+test: images/test
+
+# 类别定义
+nc: 3  # 类别数量
+names: ['ship', 'container', 'crane']  # 类别名称
+
+# 注意：这个数据集只包含测试集，用于公平对比不同模型的性能
