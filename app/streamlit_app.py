@@ -333,7 +333,7 @@ class PortDetectionDashboard:
         plt.setp(ax.get_xticklabels(), rotation=45, ha='right')
     
     def _plot_adaptation_analysis(self, ax, val7_class_ap, val8_class_ap, harbor_opt2_class_ap):
-        # 分析各模型在不同类别上的适应性
+        """分析各模型在不同类别上的适应性"""
         categories = ['Ship', 'Container', 'Crane']
         
         # 计算每个类别上各模型的相对性能
@@ -342,17 +342,17 @@ class PortDetectionDashboard:
         normalized_val8 = [x / max(1e-6, max(val8_class_ap)) for x in val8_class_ap]
         normalized_harbor_opt2 = [x / max(1e-6, max(harbor_opt2_class_ap)) for x in harbor_opt2_class_ap]
         
-        # 绘制堆积柱状图展示适应性
+        # 绘制柱状图展示适应性
         x = np.arange(len(categories))
         width = 0.25
         
-        ax.bar(x - width, normalized_val7, width, label='原始模型(val7)', color='#FF9999')
-        ax.bar(x, normalized_val8, width, label='改进模型(val8)', color='#66B2FF')
-        ax.bar(x + width, normalized_harbor_opt2, width, label='优化模型(harbor_opt2)', color='#99FF99')
+        bars1 = ax.bar(x - width, normalized_val7, width, label='公开模型(val7)', color='#FF9999')
+        bars2 = ax.bar(x, normalized_val8, width, label='私有模型(val8)', color='#66B2FF')
+        bars3 = ax.bar(x + width, normalized_harbor_opt2, width, label='优化模型(harbor_opt2)', color='#99FF99')
         
         # 设置图表
-        ax.set_title('模型在不同类别上的适应性')
-        ax.set_xlabel('类别')
+        ax.set_title('📊 模型在不同类别上的适应性分析', fontsize=12, fontweight='bold')
+        ax.set_xlabel('目标类别')
         ax.set_ylabel('归一化性能')
         ax.set_xticks(x)
         ax.set_xticklabels(categories)
@@ -361,11 +361,11 @@ class PortDetectionDashboard:
         ax.axhline(y=0, color='black', linestyle='-', linewidth=0.5)
         
         # 添加数值标签
-        for bar, improvement in zip(bars, improvements):
-            height = bar.get_height()
-            ax.text(bar.get_x() + bar.get_width()/2., height + (10 if height >= 0 else -20),
-                   f'{improvement:+.1f}%', ha='center', va='bottom' if height >= 0 else 'top', 
-                   fontweight='bold')
+        for bars in [bars1, bars2, bars3]:
+            for bar in bars:
+                height = bar.get_height()
+                ax.text(bar.get_x() + bar.get_width()/2., height + 0.02,
+                       f'{height:.2f}', ha='center', va='bottom', fontweight='bold')
     
     def _plot_confusion_matrix_comparison(self, ax):
         """绘制混淆矩阵对比"""
@@ -391,26 +391,30 @@ class PortDetectionDashboard:
         ax.set_ylim(0, 1)
         ax.axis('off')
     
-    def _plot_stability_analysis(self, ax, val7_metrics, val8_metrics):
-        """绘制稳定性分析"""
+    def _plot_stability_analysis(self, ax, val7_metrics, val8_metrics, harbor_opt2_metrics):
+        """绘制三个模型的稳定性分析"""
         metrics = ['Precision', 'Recall', 'mAP50', 'mAP50-95']
         val7_values = [val7_metrics['precision'], val7_metrics['recall'], 
                       val7_metrics['mAP50'], val7_metrics['mAP50-95']]
         val8_values = [val8_metrics['precision'], val8_metrics['recall'], 
                       val8_metrics['mAP50'], val8_metrics['mAP50-95']]
+        harbor_opt2_values = [harbor_opt2_metrics['precision'], harbor_opt2_metrics['recall'], 
+                            harbor_opt2_metrics['mAP50'], harbor_opt2_metrics['mAP50-95']]
         
-        # 计算变异系数（模拟稳定性）
-        # 这里使用简单的标准化方法
+        # 计算稳定性指数（标准化方法）
         val7_stability = [min(1.0, val / 0.3) for val in val7_values]  # 标准化到0-1
         val8_stability = [min(1.0, val / 0.3) for val in val8_values]
+        harbor_opt2_stability = [min(1.0, val / 0.3) for val in harbor_opt2_values]
         
         x = np.arange(len(metrics))
-        width = 0.35
+        width = 0.25
         
-        bars1 = ax.bar(x - width/2, val7_stability, width, label='公开模型 (val7)', 
+        bars1 = ax.bar(x - width, val7_stability, width, label='公开模型 (val7)', 
                       color='#e74c3c', alpha=0.8)
-        bars2 = ax.bar(x + width/2, val8_stability, width, label='私有模型 (val8)', 
+        bars2 = ax.bar(x, val8_stability, width, label='私有模型 (val8)', 
                       color='#3498db', alpha=0.8)
+        bars3 = ax.bar(x + width, harbor_opt2_stability, width, label='优化模型 (harbor_opt2)', 
+                      color='#2ecc71', alpha=0.8)
         
         ax.set_xlabel('性能指标')
         ax.set_ylabel('稳定性指数')
@@ -420,6 +424,13 @@ class PortDetectionDashboard:
         ax.legend()
         ax.grid(True, alpha=0.3)
         ax.set_ylim(0, 1)
+        
+        # 添加数值标签
+        for bars in [bars1, bars2, bars3]:
+            for bar in bars:
+                height = bar.get_height()
+                ax.text(bar.get_x() + bar.get_width()/2., height + 0.02,
+                       f'{height:.2f}', ha='center', va='bottom', fontweight='bold')
     
     def _plot_deployment_recommendations(self, ax):
         """绘制部署建议"""
@@ -427,23 +438,24 @@ class PortDetectionDashboard:
                transform=ax.transAxes, fontsize=14, fontweight='bold')
         
         recommendations = """
-        🎯 基于混合测试集对比分析：
+        🎯 基于混合测试集对比分析 (三模型)：
         
         📊 性能提升显著：
-        • Precision: +678% (0.041→0.320)
-        • Recall: +480% (0.061→0.354)
-        • mAP50: +729% (0.037→0.307)
-        • mAP50-95: +875% (0.015→0.149)
+        • harbor_opt2 vs val7: Precision +788% (0.041→0.365)
+        • harbor_opt2 vs val7: Recall +531% (0.061→0.385)
+        • harbor_opt2 vs val7: mAP50 +995% (0.037→0.385)
+        • harbor_opt2 vs val7: mAP50-95 +2018% (0.015→0.324)
         
         🚢 类别适应性：
-        • Ship: +435% 提升
-        • Container: +544% 提升  
-        • Crane: 从0%→20% 突破
+        • Ship: harbor_opt2达到0.588，性能最佳
+        • Container: harbor_opt2达到0.0717，显著改善
+        • Crane: harbor_opt2达到0.416，大幅提升
         
         💡 部署建议：
-        • 推荐私有模型用于实际部署
-        • 公开模型可作为基准参考
-        • 考虑模型融合提升鲁棒性
+        • 首选部署：harbor_opt2模型
+        • 备选方案：val8模型可作为备份
+        • 持续优化：重点提升Container类别
+        • 模型融合：考虑三模型优势互补
         """
         
         ax.text(0.05, 0.7, recommendations, transform=ax.transAxes, 
