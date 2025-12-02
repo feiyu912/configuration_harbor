@@ -1,0 +1,9 @@
+path: G:\configuration_harbor\harbor_port_backup
+train: train\images
+val: val\images
+test: test\images
+
+names:
+  0: ship
+  1: container
+  2: crane

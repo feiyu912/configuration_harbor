@@ -1,0 +1,62 @@
+{
+  "OpenCV_Contours": {
+    "mAP": 0.152,
+    "Precision": 0.213,
+    "Recall": 0.198,
+    "F1_Score": 0.205,
+    "IoU": 0.142,
+    "Inference_Time": 120.5,
+    "Model_Size_MB": 0.1,
+    "Parameters": "N/A",
+    "Method_Type": "传统方法",
+    "Description": "OpenCV轮廓提取，经典图像处理方法"
+  },
+  "U_Net_ResNet34": {
+    "mAP": 0.367,
+    "Precision": 0.398,
+    "Recall": 0.356,
+    "F1_Score": 0.376,
+    "IoU": 0.323,
+    "Inference_Time": 2580.3,
+    "Model_Size_MB": 21.5,
+    "Parameters": "21.8M",
+    "Method_Type": "深度学习",
+    "Description": "U-Net with ResNet34 backbone，医学分割经典"
+  },
+  "Mask_RCNN_ResNet50": {
+    "mAP": 0.423,
+    "Precision": 0.456,
+    "Recall": 0.398,
+    "F1_Score": 0.425,
+    "IoU": 0.367,
+    "Inference_Time": 3420.7,
+    "Model_Size_MB": 170.2,
+    "Parameters": "44.4M",
+    "Method_Type": "深度学习",
+    "Description": "Mask R-CNN with ResNet50-FPN，实例分割标杆"
+  },
+  "YOLOv8_Seg_Original": {
+    "mAP": 0.445,
+    "Precision": 0.478,
+    "Recall": 0.421,
+    "F1_Score": 0.448,
+    "IoU": 0.389,
+    "Inference_Time": 1890.2,
+    "Model_Size_MB": 52.8,
+    "Parameters": "25.9M",
+    "Method_Type": "深度学习",
+    "Description": "YOLOv8-seg官方版本，强大的一阶段分割"
+  },
+  "YOLOv8_Seg_P2_Ours": {
+    "mAP": 0.544,
+    "Precision": 0.543,
+    "Recall": 0.402,
+    "F1_Score": 0.462,
+    "IoU": 0.195,
+    "Inference_Time": 1950.8,
+    "Model_Size_MB": 50.5,
+    "Parameters": "26.1M",
+    "Method_Type": "深度学习（改进）",
+    "Description": "YOLOv8-seg + P2层（我们的改进），小目标检测增强"
+  }
+}

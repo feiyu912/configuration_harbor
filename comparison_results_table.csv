@@ -1,0 +1,6 @@
+﻿,Method_Type,Description,mAP,Precision,Recall,F1_Score,IoU,Model_Size_MB,Parameters,Inference_Time
+OpenCV_Contours,传统方法,OpenCV轮廓提取，经典图像处理方法,0.152,0.213,0.198,0.205,0.142,0.1,N/A,120.5
+U_Net_ResNet34,深度学习,U-Net with ResNet34 backbone，医学分割经典,0.367,0.398,0.356,0.376,0.323,21.5,21.8M,2580.3
+Mask_RCNN_ResNet50,深度学习,Mask R-CNN with ResNet50-FPN，实例分割标杆,0.423,0.456,0.398,0.425,0.367,170.2,44.4M,3420.7
+YOLOv8_Seg_Original,深度学习,YOLOv8-seg官方版本，强大的一阶段分割,0.445,0.478,0.421,0.448,0.389,52.8,25.9M,1890.2
+YOLOv8_Seg_P2_Ours,深度学习（改进）,YOLOv8-seg + P2层（我们的改进），小目标检测增强,0.544,0.543,0.402,0.462,0.195,50.5,26.1M,1950.8

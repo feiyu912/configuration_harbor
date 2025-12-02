@@ -1,18 +1,9 @@
-# 私有数据集配置
-path: ../dataset_yolo_private
-train: images/train
-val: images/val
-test: images/test
+train: ../raw_private/images
+val: ../raw_private/images
 
-# 类别定义
-nc: 3  # 类别数量
-names: ['ship', 'container', 'crane']  # 类别名称
+names:
+  0: ship
+  1: container
+  2: crane
 
-# 可选配置
-# download:  # 下载命令或脚本
-
-# 验证设置
-# val: images/val  # 验证集路径
-
-# 测试设置  
-# test: images/test  # 测试集路径
+path: ../
